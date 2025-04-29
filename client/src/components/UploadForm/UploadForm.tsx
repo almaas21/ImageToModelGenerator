@@ -91,6 +91,9 @@ export default function UploadForm() {
               fileName: imageFile.name 
             });
             
+            // Set image count for loading feedback
+            setLoadingImagesCount(1);
+            
             // Generate model from single image
             model = await ModelService.generateFromImages([imageFile]);
           } else if (imageUploadMode === "multi" && multiAngleFiles.length > 0) {
@@ -100,6 +103,9 @@ export default function UploadForm() {
               multiAngle: true,
               imageCount: multiAngleFiles.length
             });
+            
+            // Set image count for loading feedback
+            setLoadingImagesCount(multiAngleFiles.length);
             
             // Generate model from multiple images
             model = await ModelService.generateFromImages(multiAngleFiles);

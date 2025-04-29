@@ -11,18 +11,17 @@ import { useModelStore } from "./lib/stores/useModelStore";
 import { useUploadStore } from "./lib/stores/useUploadStore";
 
 function App() {
-  const { isModelLoading, isModelVisible } = useModelStore();
+  const { 
+    isModelLoading, 
+    isModelVisible,
+    loadingMode,
+    loadingImagesCount,
+    setLoadingMode
+  } = useModelStore();
+  
   const { uploadMode } = useUploadStore();
   
-  // Track the current loading mode for proper feedback
-  const [loadingMode, setLoadingMode] = useState<'single-image' | 'multi-angle' | 'text'>('single-image');
-  const [totalImages, setTotalImages] = useState(1);
-  
-  // Update state from UploadForm component
-  useEffect(() => {
-    // Default to text or single-image based on upload mode
-    setLoadingMode(uploadMode === 'text' ? 'text' : 'single-image');
-  }, [uploadMode]);
+  // No need for this effect as we handle loading mode in the UploadForm component now
   
   // Pre-load audio assets
   useEffect(() => {
@@ -55,11 +54,11 @@ function App() {
             {isModelLoading && (
               <LoadingScreen 
                 mode={loadingMode}
-                totalImages={totalImages}
+                totalImages={loadingImagesCount}
               />
             )}
             
-            <Suspense fallback={<LoadingScreen mode={loadingMode} />}>
+            <Suspense fallback={<LoadingScreen mode={loadingMode} totalImages={loadingImagesCount} />}>
               {isModelVisible && (
                 <ModelViewer />
               )}
