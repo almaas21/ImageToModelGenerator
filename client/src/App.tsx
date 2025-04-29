@@ -40,17 +40,17 @@ function App() {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <div className="min-h-screen bg-background flex flex-col">
+      <div className="min-h-screen bg-background flex flex-col overflow-hidden">
         <Header />
         
-        <main className="flex-grow flex flex-col md:flex-row">
+        <main className="flex-grow flex flex-col md:flex-row overflow-hidden">
           {/* Left side - Upload form */}
-          <div className="w-full md:w-1/3 p-6 border-r border-border">
+          <div className="w-full md:w-1/3 p-6 border-r border-border overflow-y-auto max-h-[calc(100vh-4rem)]">
             <UploadForm />
           </div>
           
           {/* Right side - 3D viewer */}
-          <div className="w-full md:w-2/3 relative">
+          <div className="w-full md:w-2/3 relative overflow-y-auto max-h-[calc(100vh-4rem)]">
             {isModelLoading && (
               <LoadingScreen 
                 mode={loadingMode}

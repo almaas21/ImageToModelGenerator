@@ -163,7 +163,7 @@ export default function UploadForm() {
   };
   
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col overflow-y-auto">
       <h2 className="text-2xl font-bold mb-6">Create 3D Model</h2>
       
       <Tabs 
