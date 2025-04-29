@@ -1,5 +1,5 @@
 import { Canvas } from "@react-three/fiber";
-import { Suspense, useState, useEffect } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { useModelStore } from "@/lib/stores/useModelStore";
 import { ModelObject } from "@/lib/models";
 import Lights from "./Lights";
@@ -82,43 +82,67 @@ const Model = ({ model }: { model: ModelObject }) => {
   
   // For glTF models
   if (model.type === 'gltf' && model.modelUrl) {
-    try {
-      const { scene } = useGLTF(model.modelUrl);
-      
-      useEffect(() => {
-        // Apply color to the model if specified
-        if (model.color) {
+    const GLTFModel = () => {
+      try {
+        // Load the model outside of render
+        const gltf = useGLTF(model.modelUrl || '');
+        const { scene } = gltf;
+        
+        // Use a ref to track if we've processed the model
+        const processedRef = useRef(false);
+        
+        useEffect(() => {
+          // Only process once
+          if (processedRef.current) return;
+          processedRef.current = true;
+          
+          // Apply color to the model if specified
+          if (model.color) {
+            scene.traverse((node) => {
+              if (node instanceof THREE.Mesh) {
+                node.material = new THREE.MeshStandardMaterial({
+                  color: model.color,
+                  roughness: 0.4,
+                  metalness: 0.6
+                });
+              }
+            });
+          }
+          
+          // Apply shadows
           scene.traverse((node) => {
             if (node instanceof THREE.Mesh) {
-              node.material = new THREE.MeshStandardMaterial({
-                color: model.color,
-                roughness: 0.4,
-                metalness: 0.6
-              });
+              node.castShadow = true;
+              node.receiveShadow = true;
             }
           });
-        }
+        }, [scene, model.color]);
         
-        // Apply shadows
-        scene.traverse((node) => {
-          if (node instanceof THREE.Mesh) {
-            node.castShadow = true;
-            node.receiveShadow = true;
-          }
-        });
-      }, [scene, model.color]);
-      
-      return (
-        <Center>
-          <group scale={model.scale || 1}>
-            <primitive object={scene} />
-          </group>
-        </Center>
-      );
-    } catch (error) {
-      console.error("Failed to load glTF model:", error);
-      setModelError("Failed to load 3D model");
-    }
+        return (
+          <primitive object={scene} />
+        );
+      } catch (error) {
+        // Handle errors safely with useEffect
+        const errorRef = useRef(error);
+        
+        useEffect(() => {
+          console.error("Failed to load glTF model:", errorRef.current);
+          setModelError("Failed to load 3D model");
+        }, []);
+        
+        return null;
+      }
+    };
+    
+    return (
+      <Center>
+        <group scale={model.scale || 1}>
+          <Suspense fallback={<ModelLoader />}>
+            <GLTFModel />
+          </Suspense>
+        </group>
+      </Center>
+    );
   }
   
   // Error state or fallback
