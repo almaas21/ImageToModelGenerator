@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
-import { ImageUp, Type, RotateCcw, Image } from "lucide-react";
+import { ImageUp, Type, RotateCcw, Image, Info } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import ImageUpload from "./ImageUpload";
 import MultiAngleUpload from "./MultiAngleUpload";
@@ -10,6 +10,7 @@ import { useUploadStore } from "@/lib/stores/useUploadStore";
 import { useModelStore } from "@/lib/stores/useModelStore";
 import { apiRequest } from "@/lib/queryClient";
 import { ModelService } from "@/services/modelService";
+import LoadingScreen from "@/components/Loading/LoadingScreen";
 
 export default function UploadForm() {
   const { setUploadMode, uploadMode } = useUploadStore();
@@ -31,6 +32,9 @@ export default function UploadForm() {
   
   // Track image upload mode (single or multi-angle)
   const [imageUploadMode, setImageUploadMode] = useState<"single" | "multi">("single");
+  
+  // For loading state
+  const [loadingMode, setLoadingMode] = useState<'single-image' | 'multi-angle' | 'text'>('single-image');
   
   const handleTabChange = (value: string) => {
     setUploadMode(value as "image" | "text");
@@ -63,6 +67,13 @@ export default function UploadForm() {
     } else if (uploadMode === "text" && !textPrompt.trim()) {
       toast.error("Please enter a text prompt");
       return;
+    }
+    
+    // Set appropriate loading mode based on input type
+    if (uploadMode === "image") {
+      setLoadingMode(imageUploadMode === "multi" ? "multi-angle" : "single-image");
+    } else {
+      setLoadingMode("text");
     }
     
     // Start loading

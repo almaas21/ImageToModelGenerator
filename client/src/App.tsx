@@ -42,9 +42,13 @@ function App() {
           
           {/* Right side - 3D viewer */}
           <div className="w-full md:w-2/3 relative">
-            {isModelLoading && <LoadingScreen />}
+            {isModelLoading && (
+              <LoadingScreen 
+                mode={uploadMode === 'text' ? 'text' : 'single-image'} 
+              />
+            )}
             
-            <Suspense fallback={<LoadingScreen />}>
+            <Suspense fallback={<LoadingScreen mode={uploadMode === 'text' ? 'text' : 'single-image'} />}>
               {isModelVisible && (
                 <ModelViewer />
               )}
