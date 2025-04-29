@@ -9,8 +9,7 @@ import TextPromptInput from "./TextPromptInput";
 import { useUploadStore } from "@/lib/stores/useUploadStore";
 import { useModelStore } from "@/lib/stores/useModelStore";
 import { apiRequest } from "@/lib/queryClient";
-import { getSampleModel } from "@/lib/models";
-import { generate_3d_model } from "@/lib/modelGeneration";
+import { ModelService } from "@/services/modelService";
 
 export default function UploadForm() {
   const { setUploadMode, uploadMode } = useUploadStore();
@@ -71,77 +70,72 @@ export default function UploadForm() {
     
     try {
       if (uploadMode === "image") {
-        // Get input based on image upload mode
-        const inputFile = imageUploadMode === "single" ? imageFile : multiAngleFiles[0];
-        
-        if (!inputFile) {
-          throw new Error("No image file available");
-        }
-        
-        const modelName = inputFile.name.split('.')[0] || "3D_Model";
-        
         try {
-          // Create form data for image upload
-          const formData = new FormData();
-          formData.append("image", inputFile);
+          let model;
           
-          // For multi-angle, add additional images
-          if (imageUploadMode === "multi") {
-            multiAngleFiles.slice(1).forEach((file, index) => {
-              formData.append(`additionalImage${index + 1}`, file);
+          // Use the appropriate method based on upload mode
+          if (imageUploadMode === "single" && imageFile) {
+            // Log the API request to the server
+            await apiRequest("POST", "/api/generate/image", { 
+              fileName: imageFile.name 
             });
+            
+            // Generate model from single image
+            model = await ModelService.generateFromImages([imageFile]);
+          } else if (imageUploadMode === "multi" && multiAngleFiles.length > 0) {
+            // Log the API request to the server
+            await apiRequest("POST", "/api/generate/image", { 
+              fileName: multiAngleFiles[0].name,
+              multiAngle: true,
+              imageCount: multiAngleFiles.length
+            });
+            
+            // Generate model from multiple images
+            model = await ModelService.generateFromImages(multiAngleFiles);
+          } else {
+            throw new Error("No image files available");
           }
           
-          // In a real production app, we would use the API call
-          // Instead, we're using a placeholder 3D model
-          const model = getSampleModel(inputFile.name || "default");
+          // Set the model in store
+          setCurrentModel(model);
+          setModelVisible(true);
           
-          // Convert model type to gltf for multi-angle uploads to reflect the improved quality
-          if (imageUploadMode === "multi" && multiAngleFiles.length >= 2) {
-            model.type = 'gltf';
-            model.modelUrl = `/models/${model.id}.glb`; // This would be created by the server
-          }
+          // Notify success
+          const successMessage = imageUploadMode === "multi" 
+            ? "3D model created from multiple angles" 
+            : "3D model created from image";
           
-          // Set the model after a delay to simulate processing
-          setTimeout(() => {
-            setCurrentModel(model);
-            setModelVisible(true);
-            setModelLoading(false);
-            toast.success(`3D model created from ${imageUploadMode === "multi" ? "multiple angles" : "image"}`);
-          }, 3000);
+          toast.success(successMessage);
           
         } catch (error) {
           console.error("Error during image processing:", error);
-          setModelLoading(false);
           toast.error("Failed to process images. Please try again.");
+        } finally {
+          setModelLoading(false);
         }
       } else {
         // Text prompt generation
         try {
-          // Make API request
-          await apiRequest("POST", "/api/generate/text", { prompt: textPrompt });
+          // Log the API request to the server
+          await apiRequest("POST", "/api/generate/text", { 
+            prompt: textPrompt 
+          });
           
-          // Get a model based on the text
-          const model = getSampleModel(textPrompt);
+          // Generate model from text prompt
+          const model = await ModelService.generateFromText(textPrompt);
           
-          // For longer, more detailed prompts, simulate a higher quality glTF model
-          if (textPrompt.length > 30) {
-            model.type = 'gltf';
-            model.modelUrl = `/models/${model.id}.glb`; // This would be created by the server
-          }
+          // Set the model in store
+          setCurrentModel(model);
+          setModelVisible(true);
           
-          // Set the model after a delay to simulate processing
-          setTimeout(() => {
-            setCurrentModel(model);
-            setModelVisible(true);
-            setModelLoading(false);
-            toast.success("3D model generated from text prompt!");
-          }, 2500);
+          // Notify success
+          toast.success("3D model generated from text prompt!");
           
         } catch (error) {
           console.error("Error during text generation:", error);
-          setModelLoading(false);
           toast.error("Failed to generate 3D model. Please try again.");
+        } finally {
+          setModelLoading(false);
         }
       }
     } catch (error) {
