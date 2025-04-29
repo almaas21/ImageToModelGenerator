@@ -22,6 +22,7 @@ export default defineConfig({
   },
   root: path.resolve(__dirname, "client"),
   build: {
+    chunkSizeWarningLimit: 1500, 
     outDir: path.resolve(__dirname, "dist/public"),
     emptyOutDir: true,
   },
