@@ -7,6 +7,7 @@ export interface ModelObject {
   scale?: number;
   position?: [number, number, number];
   rotation?: [number, number, number];
+  modelUrl?: string; // URL to the 3D model file (for glTF models)
 }
 
 // Map of keywords to model types for the demo
