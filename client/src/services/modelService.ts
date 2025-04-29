@@ -1,5 +1,6 @@
 import { ModelObject } from "@/lib/models";
 import { downloadModelAsObj } from "@/lib/exporters";
+import { generateModelFromText, processMultiAngleImages } from "@/lib/modelGeneration";
 
 /**
  * Service for handling 3D model generation and related operations
@@ -10,29 +11,44 @@ export class ModelService {
    */
   static async generateFromText(prompt: string): Promise<ModelObject> {
     try {
-      // In a production app, this would make a real API call
-      // For now, we simulate one
-      
       // Create a unique ID based on the prompt and timestamp
       const modelId = `model_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
       
-      // For demonstration purposes, determine if we should use a pre-generated model
-      // In a real app, this would be handled by the server
-      const usePregenerated = prompt.toLowerCase().includes('car') || prompt.toLowerCase().includes('vehicle');
+      // Call our API to generate the model
+      const modelUrl = await generateModelFromText(prompt, modelId);
       
-      // Return model object
+      // Generate a fallback primitive model as backup
+      const primitiveShape = determineShape(prompt);
+      const primitiveColor = determineColor(prompt);
+      
+      // Return model object with both the GLTF path and primitive backup
       return {
         id: modelId,
         name: prompt.substring(0, 30),
-        type: usePregenerated ? 'gltf' : 'primitive',
-        shape: determineShape(prompt),
-        color: determineColor(prompt),
+        type: 'gltf',
+        shape: primitiveShape, // Fallback shape if GLTF fails
+        color: primitiveColor, // Fallback color if GLTF fails
         scale: 1.0,
-        modelUrl: usePregenerated ? '/models/sample_car.glb' : undefined
+        modelUrl: modelUrl
       };
     } catch (error) {
       console.error("Error generating model from text:", error);
-      throw new Error("Failed to generate 3D model from text");
+      
+      // Create a fallback primitive model
+      const modelId = `fallback_${Date.now()}`;
+      const primitiveShape = determineShape(prompt);
+      const primitiveColor = determineColor(prompt);
+      
+      console.log("Using fallback primitive model");
+      
+      return {
+        id: modelId,
+        name: prompt.substring(0, 30),
+        type: 'primitive',
+        shape: primitiveShape,
+        color: primitiveColor,
+        scale: 1.0
+      };
     }
   }
   
@@ -41,30 +57,43 @@ export class ModelService {
    */
   static async generateFromImages(images: File[]): Promise<ModelObject> {
     try {
-      // In a production app, this would make a real API call
-      // For now, we simulate one
+      if (images.length === 0) {
+        throw new Error("No images provided");
+      }
       
       // Create a unique ID based on the first image name and timestamp
       const modelId = `model_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`;
       const mainImage = images[0];
       
-      // For demonstration purposes, determine if we should use a pre-generated model
-      // In a real app, this would be handled by the server
-      const usePregenerated = images.length > 1;
+      // Process the images to generate a 3D model
+      const modelUrl = await processMultiAngleImages(images, modelId);
       
       // Return model object
       return {
         id: modelId,
         name: mainImage.name.split('.')[0] || "Generated_Model",
-        type: usePregenerated ? 'gltf' : 'primitive',
-        shape: 'box', // Default shape for image-based models
-        color: '#E53935', // Default to red for car demo
+        type: 'gltf',
+        shape: 'box', // Fallback shape if GLTF fails
+        color: '#4285F4', // Default blue color for image-generated models
         scale: 1.0,
-        modelUrl: usePregenerated ? '/models/sample_car.glb' : undefined
+        modelUrl: modelUrl
       };
     } catch (error) {
       console.error("Error generating model from images:", error);
-      throw new Error("Failed to generate 3D model from images");
+      
+      // Create a fallback primitive model
+      const modelId = `fallback_${Date.now()}`;
+      
+      console.log("Using fallback primitive model");
+      
+      return {
+        id: modelId,
+        name: images[0]?.name.split('.')[0] || "Generated_Model",
+        type: 'primitive',
+        shape: 'box',
+        color: '#4285F4',
+        scale: 1.0
+      };
     }
   }
   
