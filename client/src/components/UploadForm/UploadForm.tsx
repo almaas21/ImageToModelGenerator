@@ -11,6 +11,7 @@ import { useModelStore } from "@/lib/stores/useModelStore";
 import { apiRequest } from "@/lib/queryClient";
 import { ModelService } from "@/services/modelService";
 import LoadingScreen from "@/components/Loading/LoadingScreen";
+import { getSampleModel } from "@/lib/models";
 
 export default function UploadForm() {
   const { setUploadMode, uploadMode } = useUploadStore();
@@ -18,6 +19,8 @@ export default function UploadForm() {
     setModelLoading, 
     setCurrentModel, 
     setModelVisible,
+    setLoadingMode,
+    setLoadingImagesCount,
     isModelLoading
   } = useModelStore();
   
@@ -32,9 +35,6 @@ export default function UploadForm() {
   
   // Track image upload mode (single or multi-angle)
   const [imageUploadMode, setImageUploadMode] = useState<"single" | "multi">("single");
-  
-  // For loading state
-  const [loadingMode, setLoadingMode] = useState<'single-image' | 'multi-angle' | 'text'>('single-image');
   
   const handleTabChange = (value: string) => {
     setUploadMode(value as "image" | "text");

@@ -1,5 +1,5 @@
 import { QueryClientProvider } from "@tanstack/react-query";
-import { Suspense, useEffect } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Toaster } from "sonner";
 import "@fontsource/inter";
 import Header from "./components/Layout/Header";
@@ -13,7 +13,17 @@ import { useUploadStore } from "./lib/stores/useUploadStore";
 function App() {
   const { isModelLoading, isModelVisible } = useModelStore();
   const { uploadMode } = useUploadStore();
-
+  
+  // Track the current loading mode for proper feedback
+  const [loadingMode, setLoadingMode] = useState<'single-image' | 'multi-angle' | 'text'>('single-image');
+  const [totalImages, setTotalImages] = useState(1);
+  
+  // Update state from UploadForm component
+  useEffect(() => {
+    // Default to text or single-image based on upload mode
+    setLoadingMode(uploadMode === 'text' ? 'text' : 'single-image');
+  }, [uploadMode]);
+  
   // Pre-load audio assets
   useEffect(() => {
     // Load audio files
@@ -44,11 +54,12 @@ function App() {
           <div className="w-full md:w-2/3 relative">
             {isModelLoading && (
               <LoadingScreen 
-                mode={uploadMode === 'text' ? 'text' : 'single-image'} 
+                mode={loadingMode}
+                totalImages={totalImages}
               />
             )}
             
-            <Suspense fallback={<LoadingScreen mode={uploadMode === 'text' ? 'text' : 'single-image'} />}>
+            <Suspense fallback={<LoadingScreen mode={loadingMode} />}>
               {isModelVisible && (
                 <ModelViewer />
               )}
